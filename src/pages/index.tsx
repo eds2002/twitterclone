@@ -7,8 +7,9 @@ import Image from "next/image";
 dayjs.extend(relativeTime);
 
 import { api, RouterOutputs } from "~/utils/api";
-import { LoadingPage } from "~/components/LoadingSpinner";
+import LoadingSpinner, { LoadingPage } from "~/components/LoadingSpinner";
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 type PostWithUser = RouterOutputs["posts"]["getAll"][number];
 const PostsView = (props: PostWithUser) => {
@@ -67,6 +68,14 @@ const Home: NextPage = () => {
         setInput("");
         void ctx.posts.getAll.invalidate();
       },
+      onError: (e) => {
+        const errorMessage = e.data?.zodError?.fieldErrors.content;
+        if (errorMessage && errorMessage[0]) {
+          toast.error(errorMessage[0]);
+        } else {
+          toast.error("Failed to post! Please try again later");
+        }
+      },
     });
 
     if (!user) return null;
@@ -84,10 +93,25 @@ const Home: NextPage = () => {
           placeholder="Type some emojis"
           className="w-full bg-transparent outline-none"
           value={input}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              if (input !== "") {
+                mutate({ content: input });
+              }
+            }
+          }}
           onChange={(e) => setInput(e.target.value)}
           disabled={isPosting}
         />
-        <button onClick={() => mutate({ content: input })}>Post</button>
+        {input !== "" && !isPosting && (
+          <button onClick={() => mutate({ content: input })}>Post</button>
+        )}
+        {isPosting && (
+          <div className="flex items-center justify-center">
+            <LoadingSpinner size={20} />
+          </div>
+        )}
       </div>
     );
   };
