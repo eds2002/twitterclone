@@ -1,4 +1,4 @@
-import clerkClient, { User } from "@clerk/clerk-sdk-node";
+import clerkClient from "@clerk/clerk-sdk-node";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -8,16 +8,9 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 
-const filterUserForClient = (user: User) => {
-  return {
-    id: user.id,
-    username: user.username,
-    profilePicture: user.profileImageUrl,
-  };
-};
-
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+import { filterUserForClient } from "~/server/helpers/filterUserForClient";
 
 const ratelimit = new Ratelimit({
   redis: Redis.fromEnv(),
@@ -46,6 +39,7 @@ export const postsRouter = createTRPCRouter({
           code: "INTERNAL_SERVER_ERROR",
           message: "Author for post not found",
         });
+
       return {
         post,
         author: {
