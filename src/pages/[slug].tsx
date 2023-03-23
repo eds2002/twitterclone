@@ -3,6 +3,26 @@ import Head from "next/head";
 import { api } from "~/utils/api";
 import Image from "next/image";
 
+const ProfileFeed = (props: { userId: string }) => {
+  const { data, isLoading } = api.posts.getPostsByUserId.useQuery({
+    userId: props.userId,
+  });
+
+  if (isLoading) return <LoadingPage />;
+  if (!data || data.length === 0) return <div>User has not posteds</div>;
+  return (
+    <div className="flex flex-col">
+      {data.map((fullpost) => (
+        <PostsView
+          post={fullpost.post}
+          author={fullpost.author}
+          key={fullpost.post.id}
+        />
+      ))}
+    </div>
+  );
+};
+
 const ProfilePage: NextPage<{ username: string }> = ({ username }) => {
   const { data } = api.profile.getUserByUsername.useQuery({
     username,
@@ -31,6 +51,7 @@ const ProfilePage: NextPage<{ username: string }> = ({ username }) => {
           data.username ?? ""
         }`}</div>
         <div className="border-b border-slate-400"></div>
+        <ProfileFeed userId={data.id} />
       </Layout>
     </>
   );
@@ -41,6 +62,8 @@ import { appRouter } from "~/server/api/root";
 import { prisma } from "~/server/db";
 import superjson from "superjson";
 import Layout from "~/components/Layout";
+import { LoadingPage } from "~/components/LoadingSpinner";
+import { PostsView } from "~/components/PostView";
 
 export const getStaticProps: GetStaticProps = async (context) => {
   const ssg = createProxySSGHelpers({
