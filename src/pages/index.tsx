@@ -8,6 +8,7 @@ dayjs.extend(relativeTime);
 
 import { api, RouterOutputs } from "~/utils/api";
 import { LoadingPage } from "~/components/LoadingSpinner";
+import { useState } from "react";
 
 type PostWithUser = RouterOutputs["posts"]["getAll"][number];
 const PostsView = (props: PostWithUser) => {
@@ -41,7 +42,7 @@ const Feed = () => {
   if (!data) return <div>Something went wrong</div>;
   return (
     <div className="flex flex-col ">
-      {data?.map((fullPost) => (
+      {data.map((fullPost) => (
         <PostsView {...fullPost} key={fullPost.post.id} />
       ))}
     </div>
@@ -50,6 +51,8 @@ const Feed = () => {
 
 const Home: NextPage = () => {
   const { user, isLoaded: userLoaded, isSignedIn } = useUser();
+  const [input, setInput] = useState("");
+  const ctx = api.useContext();
 
   // Start fetching ASAP
   api.posts.getAll.useQuery();
@@ -59,6 +62,13 @@ const Home: NextPage = () => {
 
   const CreatePostWizard = () => {
     const { user } = useUser();
+    const { mutate, isLoading: isPosting } = api.posts.create.useMutation({
+      onSuccess: () => {
+        setInput("");
+        void ctx.posts.getAll.invalidate();
+      },
+    });
+
     if (!user) return null;
 
     return (
@@ -73,7 +83,11 @@ const Home: NextPage = () => {
         <input
           placeholder="Type some emojis"
           className="w-full bg-transparent outline-none"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          disabled={isPosting}
         />
+        <button onClick={() => mutate({ content: input })}>Post</button>
       </div>
     );
   };
